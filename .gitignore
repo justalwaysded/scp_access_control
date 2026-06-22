@@ -1,0 +1,7 @@
+data/*.db
+*.db
+
+*.log
+
+# python cache
+*.pyc
