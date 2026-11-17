@@ -1,7 +1,9 @@
-data/*.db
-*.db
-
-*.log
-
-# python cache
+__pycache__/
 *.pyc
+
+
+data/security.db
+data/auth.log
+
+.vscode/
+.DS_Store

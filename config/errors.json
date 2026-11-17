@@ -1,0 +1,22 @@
+{
+  "ERR_01": {
+    "code": "INVALID_BARCODE_FORMAT",
+    "severity": "LOW",
+    "message": "Card read error (Expected 11 digits)."
+  },
+  "ERR_02": {
+    "code": "UNKNOWN_EMPLOYEE_ID",
+    "severity": "MEDIUM",
+    "message": "Employee with such ID has not been found in the site registry."
+  },
+  "ERR_03": {
+    "code": "CARD_DATA_MISMATCHED_TAMPERING",
+    "severity": "CRITICAL",
+    "message": "Clearance level or Class mismatch detected. Card data tampering detected."
+  },
+  "ERR_04": {
+    "code": "INVALID_PIN_ATTEMPT",
+    "severity": "HIGH",
+    "message": "Invalid authentication PIN-Code."
+  }
+}
