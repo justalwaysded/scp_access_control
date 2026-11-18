@@ -16,10 +16,13 @@ from src.parser import parse_barcode
 from src.admin import pause
 from src.admin import clear_screen
 
+
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, 'data', 'security.db')
 
 LOG_PATH = os.path.join(BASE_DIR, 'data', 'auth.log')
+
 EVENTS_PATH = os.path.join(BASE_DIR, 'config', 'events.json')
 
 with open(EVENTS_PATH, "r", encoding="utf-8") as f:
@@ -27,6 +30,9 @@ with open(EVENTS_PATH, "r", encoding="utf-8") as f:
 
 def log_event(event_id: str, card_id: str, details: str = "", emp_id: str | None = None):
     os.makedirs(os.path.join(BASE_DIR, 'data'), exist_ok=True)
+    dt_now = datetime.now().strftime("%Y-%m-%d")
+    dynamic_log_path = os.path.join(BASE_DIR, 'data', f'auth_{dt_now}.log')
+
     event_data = EVENT_CATALOG.get(event_id)
     if event_data is None:
         raise ValueError(f"Unknown event ID: {event_id}")
@@ -43,7 +49,7 @@ def log_event(event_id: str, card_id: str, details: str = "", emp_id: str | None
     if details:
         log_record["details"] = details
 
-    with open(LOG_PATH, "a", encoding="utf-8") as log_file:
+    with open(dynamic_log_path, "a", encoding="utf-8") as log_file:
         log_file.write(json.dumps(log_record, ensure_ascii=False) + "\n")
     
     if event_id != "LOGIN_GRANTED":
