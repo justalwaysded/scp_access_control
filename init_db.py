@@ -17,14 +17,16 @@ if __name__ == "__main__":
     print(f"Salted and Hashed PIN: {hashed_pin}")
 
 def init_database():
-    os.makedirs('data', exist_ok=True)
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    DB_PATH = os.path.join(BASE_DIR, 'data', 'security.db')
+    DATA_DIR = os.path.join(BASE_DIR, 'data')
+    os.makedirs(DATA_DIR, exist_ok=True)
+    DB_PATH = os.path.join(DATA_DIR, 'security.db')
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    cursor.execute('''
+    # CREATE TABLE IF NOT EXISTS doesn't change an existing table, so we add missing columns below.
+    cursor.execute(''' 
             CREATE TABLE IF NOT EXISTS employees (
                 site TEXT,
                 department TEXT,
@@ -33,23 +35,46 @@ def init_database():
                 clearance_level INTEGER,
                 access_class TEXT,
                 pin_hash TEXT,
+                failed_attempts INTEGER NOT NULL DEFAULT 0,
+                window_started_at TEXT,
+                locked_until TEXT,
                 PRIMARY KEY (site, department, emp_id)
             )
         ''')
+    cursor.execute("PRAGMA table_info(employees)")
+    columns = [row[1] for row in cursor.fetchall()]
 
-# text data; employees: 15420412934, 19110075323, 15420429532
-    # employees_data = [
-    #     ('15', '42', '04129', 'Dr. Bright', 4, 'C', gen_salt_hash('1234')),
-    #     ('19', '11', '00753', 'Agent S.', 3, 'B', gen_salt_hash('5555')),
-    #     ('15', '42', '04295', 'Infr. Eng. Alex', 2, 'C', gen_salt_hash('9876'))
-    # ]
+    if "failed_attempts" not in columns:
+        cursor.execute("ALTER TABLE employees ADD COLUMN failed_attempts INTEGER NOT NULL DEFAULT 0")
 
-    # cursor.executemany('''
-    # INSERT OR REPLACE INTO employees
-    # (site, department, emp_id, name, clearance_level, access_class, pin_hash)
-    # VALUES (?, ?, ?, ?, ?, ?, ?)
+    if "window_started_at" not in columns:
+        cursor.execute("ALTER TABLE employees ADD COLUMN window_started_at TEXT")
 
-    # ''', employees_data)
+    if "locked_until" not in columns:
+        cursor.execute("ALTER TABLE employees ADD COLUMN locked_until TEXT")
+
+    cursor.execute("PRAGMA table_info(employees)")
+    columns = {row[1] for row in cursor.fetchall()}
+
+    required = {
+        "site",
+        "department",
+        "emp_id",
+        "name",
+        "clearance_level",
+        "access_class",
+        "pin_hash",
+        "failed_attempts", 
+        "window_started_at", 
+        "locked_until"
+        }
+
+    missing = required - columns
+
+    if missing:
+        conn.rollback()
+        conn.close()
+        raise RuntimeError(f"Unable to add columns: {missing}")
 
     conn.commit()
     conn.close()
