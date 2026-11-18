@@ -6,7 +6,7 @@ import getpass
 import json
 import sys
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
@@ -56,7 +56,6 @@ def log_event(event_id: str, card_id: str, details: str = "", emp_id: str | None
         print(event_data["message"])
 
 def verify_pin(stored_password: str, provided_pin: str) -> bool:
-    """Checks pin with a hash from the db"""
     try:
         salt, stored_hash = stored_password.split('$')
     except ValueError:
@@ -69,6 +68,7 @@ def verify_pin(stored_password: str, provided_pin: str) -> bool:
         100_000
     ).hex()
 
+    # Compare hashes using a function designed to be resistant to timing analysis.
     return hmac.compare_digest(stored_hash, new_hash)
 
 def authenticate_user(raw_barcode: str) -> bool:
@@ -84,13 +84,28 @@ def authenticate_user(raw_barcode: str) -> bool:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute('''
-    SELECT name, clearance_level, access_class, pin_hash 
-    FROM employees
-    WHERE site = ? AND department = ? AND emp_id = ?
+    SELECT 
+        name, 
+        clearance_level, 
+        access_class, 
+        pin_hash, 
+        locked_until,
+        failed_attempts,
+        window_started_at 
+    FROM 
+        employees
+    WHERE 
+        site = ? 
+    AND 
+        department = ? 
+    AND 
+        emp_id = ?
     ''', (card["site"], card["department"], card["emp_id"]))
 
     record = cursor.fetchone()
     conn.close()
+
+    # case
 
     # case: employee not found
     if not record:
@@ -98,7 +113,7 @@ def authenticate_user(raw_barcode: str) -> bool:
         pause()
         return False
 
-    name, db_clearance, db_class, db_pin_hash = record
+    name, db_clearance, db_class, db_pin_hash, locked_until, failed_attempts, window_started_at = record
 
     # case: data tempering check
     if card["clearance"] != db_clearance or card["class"] != db_class:
@@ -106,13 +121,58 @@ def authenticate_user(raw_barcode: str) -> bool:
         pause()
         return False
 
-    print(f"\n[SCAN OK] Employee: {name} | Class: {db_class} | Clearance: {db_clearance}")
-    entered_pin = getpass.getpass("Enter PIN: ")
+    # Decline only if the previously set blocking period has not yet expired.
+    if locked_until is not None:
+        unlock_time = datetime.fromisoformat(locked_until)
+        if datetime.now() < unlock_time:    
+            log_event("ERR_05", clean_code, emp_id=card["emp_id"])
+            pause()
+            return False
 
-    if not verify_pin(db_pin_hash, entered_pin):
-        log_event("ERR_04", clean_code, emp_id=card["emp_id"])
-        pause()
-        return False
+    print(f"\n[SCAN OK] Employee: {name} | Class: {db_class} | Clearance: {db_clearance}")
+    while True:
+        entered_pin = getpass.getpass("Enter PIN: ")
+
+        if verify_pin(db_pin_hash, entered_pin):
+            break
+        else:
+            now = datetime.now()
+
+            # If more than 10 minutes have passed since the first error, begin a new counting window.
+            if window_started_at is None or now - datetime.fromisoformat(window_started_at) > timedelta(minutes=10):
+                failed_attempts = 0
+                window_started_at = now.isoformat()
+            failed_attempts += 1
+
+            if failed_attempts >= 5:
+                locked_until = (now + timedelta(minutes=15)).isoformat()
+
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            cursor.execute('''
+            UPDATE employees
+            SET failed_attempts = ?, window_started_at = ?, locked_until = ?
+            WHERE site = ? AND department = ? AND emp_id = ?
+            ''', (failed_attempts, window_started_at, locked_until, card["site"], card["department"], card["emp_id"]))
+            conn.commit()
+            conn.close()
+            
+            log_event("ERR_04", clean_code, emp_id=card["emp_id"])
+            
+            if failed_attempts >= 5:
+                log_event("ERR_05", clean_code, emp_id=card["emp_id"])
+                pause()
+                return False
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+    UPDATE employees
+    SET failed_attempts = 0, window_started_at = NULL, locked_until = NULL
+    WHERE site = ? AND department = ? AND emp_id = ?
+    ''', (card["site"], card["department"], card["emp_id"]))
+    conn.commit()
+    conn.close()
 
     log_event("LOGIN_GRANTED", clean_code, emp_id=card["emp_id"])
     print(f"\n[GRANTED] Access granted. Welcome, {name}.")

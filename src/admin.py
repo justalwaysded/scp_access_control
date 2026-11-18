@@ -12,8 +12,9 @@ from init_db import gen_salt_hash
 from init_db import init_database
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.path.join(BASE_DIR, 'data', 'security.db')
-LOG_PATH = os.path.join(BASE_DIR, 'data', 'auth.log')
+DATA_DIR = os.path.join(BASE_DIR, 'data')
+DB_PATH = os.path.join(DATA_DIR, 'security.db')
+LOG_PATH = os.path.join(DATA_DIR, 'auth.log')
 
 # class mapping to transform from a letter to a digit 
 reversed_class_mapping = {'A': '1', 'B': '2', 'C': '3', 'D': '4', 'E': '5'}
@@ -141,23 +142,11 @@ def list_employee():
     pause()
 
 def add_example_employees():
-    os.makedirs('data', exist_ok=True)
+    # Prepare or update the schema before adding test employees.
+    init_database()
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS employees (
-            site TEXT,
-            department TEXT,
-            emp_id TEXT,
-            name TEXT,
-            clearance_level INTEGER,
-            access_class TEXT,
-            pin_hash TEXT,
-            PRIMARY KEY (site, department, emp_id)
-        )
-    ''')
-    
     employees_data = [
         ('15', '42', '04129', 'Dr. Bright', 4, 'C', gen_salt_hash('1234')),
         ('19', '11', '00753', 'Agent S.', 3, 'B', gen_salt_hash('5555')),

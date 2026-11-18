@@ -23,6 +23,12 @@
     "severity": "HIGH",
     "message": "Invalid PIN. Please try again."
   },
+  "ERR_05": {
+    "event_type": "ACCESS_DENIED",
+    "code": "LOCKED_LOGIN",
+    "severity": "HIGH",
+    "message": "Your account is blocked because of several incorrect login attempts."
+  },
   "LOGIN_GRANTED": {
     "event_type": "ACCESS_GRANTED",
     "severity": "INFO",
