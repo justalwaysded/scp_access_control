@@ -1,0 +1,175 @@
+[1mdiff --git a/config/events.json b/config/events.json[m
+[1mindex 4b8ea77..715ecaa 100644[m
+[1m--- a/config/events.json[m
+[1m+++ b/config/events.json[m
+[36m@@ -1,22 +1,36 @@[m
+ {[m
+   "ERR_01": {[m
+[32m+[m[32m    "event_type": "SECURITY_INCIDENT",[m
+     "code": "INVALID_BARCODE_FORMAT",[m
+     "severity": "LOW",[m
+[31m-    "message": "Card read error (Expected 11 digits)."[m
+[32m+[m[32m    "message": "Card read error. Please scan your card again."[m
+   },[m
+   "ERR_02": {[m
+[32m+[m[32m    "event_type": "SECURITY_INCIDENT",[m
+     "code": "UNKNOWN_EMPLOYEE_ID",[m
+     "severity": "MEDIUM",[m
+[31m-    "message": "Employee with such ID has not been found in the site registry."[m
+[32m+[m[32m    "message": "Employee not found. Contact your administrator."[m
+   },[m
+   "ERR_03": {[m
+[32m+[m[32m    "event_type": "SECURITY_INCIDENT",[m
+     "code": "CARD_DATA_MISMATCHED_TAMPERING",[m
+     "severity": "CRITICAL",[m
+[31m-    "message": "Clearance level or Class mismatch detected. Card data tampering detected."[m
+[32m+[m[32m    "message": "Security alert: card data mismatch."[m
+   },[m
+   "ERR_04": {[m
+[32m+[m[32m    "event_type": "SECURITY_INCIDENT",[m
+     "code": "INVALID_PIN_ATTEMPT",[m
+     "severity": "HIGH",[m
+[31m-    "message": "Invalid authentication PIN-Code."[m
+[32m+[m[32m    "message": "Invalid PIN. Please try again."[m
+[32m+[m[32m  },[m
+[32m+[m[32m  "LOGIN_GRANTED": {[m
+[32m+[m[32m    "event_type": "ACCESS_GRANTED",[m
+[32m+[m[32m    "severity": "INFO",[m
+[32m+[m[32m    "message": "Access granted. Welcome."[m
+[32m+[m
+   }[m
+[32m+[m
+[32m+[m
+[32m+[m
+[32m+[m
+ }[m
+\ No newline at end of file[m
+[1mdiff --git a/src/auth_system.py b/src/auth_system.py[m
+[1mindex 1e266fe..83ca593 100644[m
+[1m--- a/src/auth_system.py[m
+[1m+++ b/src/auth_system.py[m
+[36m@@ -2,16 +2,16 @@[m [mimport hashlib[m
+ import hmac[m
+ import sqlite3[m
+ import os[m
+[31m-import datetime[m
+ import getpass[m
+ import json[m
+ import sys[m
+ [m
+[32m+[m[32mfrom datetime import datetime[m
+[32m+[m
+ current_dir = os.path.dirname(os.path.abspath(__file__))[m
+ parent_dir = os.path.dirname(current_dir)[m
+ sys.path.append(parent_dir)[m
+ [m
+[31m-from datetime import datetime[m
+ from src.parser import parse_barcode[m
+ from src.admin import pause[m
+ from src.admin import clear_screen[m
+[36m@@ -23,43 +23,35 @@[m [mLOG_PATH = os.path.join(BASE_DIR, 'data', 'auth.log')[m
+ EVENTS_PATH = os.path.join(BASE_DIR, 'config', 'events.json')[m
+ [m
+ with open(EVENTS_PATH, "r", encoding="utf-8") as f:[m
+[31m-    ERROR_CATALOG = json.load(f)[m
+[31m-[m
+[31m-# def log_security_incident(card_id: str, error_id: str, details: str = ""):[m
+[31m-#     # writes security incidents in a protected log file[m
+[31m-#     os.makedirs((os.path.join(BASE_DIR, 'data')), exist_ok=True)[m
+[31m-#     err = ERROR_CATALOG.get(error_id, {[m
+[31m-#         "code": "UNKNOWN ERROR",[m
+[31m-#         "severity": "HIGH",[m
+[31m-#         "message": "Unknown security incident."[m
+[31m-#     })[m
+[31m-[m
+[31m-#     log_record = {[m
+[31m-#         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),[m
+[31m-#         "error_id": error_id,[m
+[31m-#         "code": err["code"],[m
+[31m-#         "severity": err["severity"],[m
+[31m-#         "card_id": card_id,[m
+[31m-#         "details": details[m
+[31m-#     }[m
+[31m-[m
+[31m-    # with open(LOG_PATH, "a", encoding="utf-8") as log_file:[m
+[31m-    #     log_file.write(json.dumps(log_record, ensure_ascii=False) + "\n")[m
+[31m-    [m
+[31m-    # print(f"\n[ALERT | {error_id} | {err['severity']}] {err['message']}")[m
+[31m-    # print("This incident will be reported.")[m
+[32m+[m[32m    EVENT_CATALOG = json.load(f)[m
+ [m
+[31m-def log_event(event_type: str, card_id: str, details: str = "", error_id: str = None, emp_id: str = None):[m
+[32m+[m[32mdef log_event(event_id: str, card_id: str, details: str = "", emp_id: str | None = None):[m
+[32m+[m[32m    os.makedirs(os.path.join(BASE_DIR, 'data'), exist_ok=True)[m
+[32m+[m[32m    event_data = EVENT_CATALOG.get(event_id)[m
+[32m+[m[41m    [m
+[32m+[m[32m    if event_data is None:[m
+[32m+[m[32m        raise ValueError(f"Unknown event ID: {event_id}")[m
+[32m+[m[41m    [m
+[32m+[m[41m    [m
+     log_record = {[m
+         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),[m
+[31m-        "event_type": event_type,[m
+[32m+[m[32m        "event_id": event_id,[m
+[32m+[m[32m        "event_type": event_data["event_type"],[m
+[32m+[m[32m        "code": event_data.get("code"),[m
+[32m+[m[32m        "severity": event_data.get("severity"),[m
+         "card_id": card_id,[m
+         "emp_id": emp_id,[m
+     }[m
+ [m
+[31m-    if error_id:[m
+[31m-        log_record["error_id"] = error_id[m
+[31m-        [m
+[32m+[m[32m    if details:[m
+[32m+[m[32m        log_record["details"] = details[m
+[32m+[m
+[32m+[m[32m    with open(LOG_PATH, "a", encoding="utf-8") as log_file:[m
+[32m+[m[32m        log_file.write(json.dumps(log_record, ensure_ascii=False) + "\n")[m
+[32m+[m[41m    [m
+[32m+[m[32m    if event_id != "LOGIN_GRANTED":[m
+[32m+[m[32m        print(event_data["message"])[m
+[32m+[m
+     [m
+ [m
+ def verify_pin(stored_password: str, provided_pin: str) -> bool:[m
+[36m@@ -84,7 +76,7 @@[m [mdef authenticate_user(raw_barcode: str) -> bool:[m
+     try:[m
+         card = parse_barcode(clean_code)[m
+     except ValueError as e:[m
+[31m-        log_security_incident(clean_code, "ERR_01", str(e))[m
+[32m+[m[32m        log_event("ERR_01", clean_code, details=str(e))[m
+         pause()[m
+         return False[m
+ [m
+[36m@@ -101,7 +93,7 @@[m [mdef authenticate_user(raw_barcode: str) -> bool:[m
+ [m
+     # case: employee not found[m
+     if not record:[m
+[31m-        log_security_incident(clean_code, "ERR_02")[m
+[32m+[m[32m        log_event("ERR_02", clean_code)[m
+         pause()[m
+         return False[m
+ [m
+[36m@@ -109,7 +101,7 @@[m [mdef authenticate_user(raw_barcode: str) -> bool:[m
+ [m
+     # case: data tempering check[m
+     if card["clearance"] != db_clearance or card["class"] != db_class:[m
+[31m-        log_security_incident(clean_code, "ERR_03")[m
+[32m+[m[32m        log_event("ERR_03", clean_code, emp_id=card["emp_id"])[m
+         pause()[m
+         return False[m
+ [m
+[36m@@ -117,10 +109,11 @@[m [mdef authenticate_user(raw_barcode: str) -> bool:[m
+     entered_pin = getpass.getpass("Enter PIN: ")[m
+ [m
+     if not verify_pin(db_pin_hash, entered_pin):[m
+[31m-        log_security_incident(clean_code, "ERR_04")[m
+[32m+[m[32m        log_event("ERR_04", clean_code, emp_id=card["emp_id"])[m
+         pause()[m
+         return False[m
+ [m
+[32m+[m[32m    log_event("LOGIN_GRANTED", clean_code, emp_id=card["emp_id"])[m
+     print(f"\n[GRANTED] Access granted. Welcome, {name}.")[m
+     pause()[m
+     return True[m
