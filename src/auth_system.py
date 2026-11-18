@@ -2,52 +2,58 @@ import hashlib
 import hmac
 import sqlite3
 import os
-import datetime
 import getpass
 import json
 import sys
+
+from datetime import datetime
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
-from datetime import datetime
 from src.parser import parse_barcode
 from src.admin import pause
 from src.admin import clear_screen
+
+
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, 'data', 'security.db')
 
 LOG_PATH = os.path.join(BASE_DIR, 'data', 'auth.log')
-ERRORS_PATH = os.path.join(BASE_DIR, 'config', 'errors.json')
 
-with open(ERRORS_PATH, "r", encoding="utf-8") as f:
-    ERROR_CATALOG = json.load(f)
+EVENTS_PATH = os.path.join(BASE_DIR, 'config', 'events.json')
 
-def log_security_incident(card_id: str, error_id: str, details: str = ""):
-    # writes security incidents in a protected log file
-    os.makedirs((os.path.join(BASE_DIR, 'data')), exist_ok=True)
-    err = ERROR_CATALOG.get(error_id, {
-        "code": "UNKNOWN ERROR",
-        "severity": "HIGH",
-        "message": "Unknown security incident."
-    })
+with open(EVENTS_PATH, "r", encoding="utf-8") as f:
+    EVENT_CATALOG = json.load(f)
 
+def log_event(event_id: str, card_id: str, details: str = "", emp_id: str | None = None):
+    os.makedirs(os.path.join(BASE_DIR, 'data'), exist_ok=True)
+    dt_now = datetime.now().strftime("%Y-%m-%d")
+    dynamic_log_path = os.path.join(BASE_DIR, 'data', f'auth_{dt_now}.log')
+
+    event_data = EVENT_CATALOG.get(event_id)
+    if event_data is None:
+        raise ValueError(f"Unknown event ID: {event_id}")
     log_record = {
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "error_id": error_id,
-        "code": err["code"],
-        "severity": err["severity"],
+        "event_id": event_id,
+        "event_type": event_data["event_type"],
+        "code": event_data.get("code"),
+        "severity": event_data.get("severity"),
         "card_id": card_id,
-        "details": details
+        "emp_id": emp_id,
     }
 
-    with open(LOG_PATH, "a", encoding="utf-8") as log_file:
+    if details:
+        log_record["details"] = details
+
+    with open(dynamic_log_path, "a", encoding="utf-8") as log_file:
         log_file.write(json.dumps(log_record, ensure_ascii=False) + "\n")
     
-    print(f"\n[ALERT | {error_id} | {err['severity']}] {err['message']}")
-    print("This incident will be reported.")
+    if event_id != "LOGIN_GRANTED":
+        print(event_data["message"])
 
 def verify_pin(stored_password: str, provided_pin: str) -> bool:
     """Checks pin with a hash from the db"""
@@ -71,7 +77,7 @@ def authenticate_user(raw_barcode: str) -> bool:
     try:
         card = parse_barcode(clean_code)
     except ValueError as e:
-        log_security_incident(clean_code, "ERR_01", str(e))
+        log_event("ERR_01", clean_code, details=str(e))
         pause()
         return False
 
@@ -88,7 +94,7 @@ def authenticate_user(raw_barcode: str) -> bool:
 
     # case: employee not found
     if not record:
-        log_security_incident(clean_code, "ERR_02")
+        log_event("ERR_02", clean_code)
         pause()
         return False
 
@@ -96,7 +102,7 @@ def authenticate_user(raw_barcode: str) -> bool:
 
     # case: data tempering check
     if card["clearance"] != db_clearance or card["class"] != db_class:
-        log_security_incident(clean_code, "ERR_03")
+        log_event("ERR_03", clean_code, emp_id=card["emp_id"])
         pause()
         return False
 
@@ -104,10 +110,11 @@ def authenticate_user(raw_barcode: str) -> bool:
     entered_pin = getpass.getpass("Enter PIN: ")
 
     if not verify_pin(db_pin_hash, entered_pin):
-        log_security_incident(clean_code, "ERR_04")
+        log_event("ERR_04", clean_code, emp_id=card["emp_id"])
         pause()
         return False
 
+    log_event("LOGIN_GRANTED", clean_code, emp_id=card["emp_id"])
     print(f"\n[GRANTED] Access granted. Welcome, {name}.")
     pause()
     return True

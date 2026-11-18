@@ -3,7 +3,7 @@ __pycache__/
 
 
 data/security.db
-data/auth.log
+data/*.log
 
 .vscode/
 .DS_Store

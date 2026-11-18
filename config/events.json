@@ -1,0 +1,31 @@
+{
+  "ERR_01": {
+    "event_type": "SECURITY_INCIDENT",
+    "code": "INVALID_BARCODE_FORMAT",
+    "severity": "LOW",
+    "message": "Card read error. Please scan your card again."
+  },
+  "ERR_02": {
+    "event_type": "SECURITY_INCIDENT",
+    "code": "UNKNOWN_EMPLOYEE_ID",
+    "severity": "MEDIUM",
+    "message": "Employee not found. Contact your administrator."
+  },
+  "ERR_03": {
+    "event_type": "SECURITY_INCIDENT",
+    "code": "CARD_DATA_MISMATCHED_TAMPERING",
+    "severity": "CRITICAL",
+    "message": "Security alert: card data mismatch."
+  },
+  "ERR_04": {
+    "event_type": "SECURITY_INCIDENT",
+    "code": "INVALID_PIN_ATTEMPT",
+    "severity": "HIGH",
+    "message": "Invalid PIN. Please try again."
+  },
+  "LOGIN_GRANTED": {
+    "event_type": "ACCESS_GRANTED",
+    "severity": "INFO",
+    "message": "Access granted. Welcome."
+  }
+}
