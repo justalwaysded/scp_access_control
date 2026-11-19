@@ -117,7 +117,7 @@ def register_employee():
 
 def list_employee():
     conn = sqlite3.connect(DB_PATH)
-    df = pd.read_sql_query("SELECT * FROM employees", conn)
+    df = pd.read_sql_query("SELECT site, department, emp_id, name, clearance_level, access_class FROM employees", conn)
     conn.close()
 
     if df.empty:
