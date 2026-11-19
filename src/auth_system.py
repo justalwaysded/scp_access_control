@@ -13,8 +13,8 @@ parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
 from src.parser import parse_barcode
-from src.admin import pause
-from src.admin import clear_screen
+from src.console import pause
+from src.console import clear_screen
 
 
 
