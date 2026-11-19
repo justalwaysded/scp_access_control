@@ -10,6 +10,8 @@ sys.path.append(parent_dir)
 
 from init_db import gen_salt_hash
 from init_db import init_database
+from src.console import pause
+from src.console import clear_screen
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
@@ -23,13 +25,6 @@ def build_barcode(site, department, emp_id, access_class, clearance) -> str:
     employee_class = reversed_class_mapping.get(access_class, '5')
     ready_barcode = f"{site}{department}{emp_id}{employee_class}{clearance}"
     return ready_barcode
-
-def clear_screen():
-    # screen clear for windows ('cls') and linux/macOS ('clear')
-    os.system('cls' if os.name == 'nt' else 'clear')
-
-def pause():
-    input("\nPress RETURN to continue...")
 
 def register_employee():
     clear_screen()
