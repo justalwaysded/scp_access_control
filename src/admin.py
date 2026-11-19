@@ -17,9 +17,9 @@ DB_PATH = os.path.join(DATA_DIR, 'security.db')
 LOG_PATH = os.path.join(DATA_DIR, 'auth.log')
 
 # class mapping to transform from a letter to a digit 
-reversed_class_mapping = {'A': '1', 'B': '2', 'C': '3', 'D': '4', 'E': '5'}
 
 def build_barcode(site, department, emp_id, access_class, clearance) -> str:
+    reversed_class_mapping = {'A': '1', 'B': '2', 'C': '3', 'D': '4', 'E': '5'}
     employee_class = reversed_class_mapping.get(access_class, '5')
     ready_barcode = f"{site}{department}{emp_id}{employee_class}{clearance}"
     return ready_barcode
