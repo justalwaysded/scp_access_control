@@ -8,18 +8,25 @@ def parse_barcode(raw_string) -> dict:
     department = clean_string[2:4]
     employee = clean_string[4:9]
     class_digit = clean_string[9]
-    clearance = int(clean_string[10])
-    
-    class_mapping = {'1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E'}
-    employee_class = class_mapping.get(class_digit, 'D')
+    clearance_digit = clean_string[10]
 
-    return {
-        "site": site,
-        "department": department,
-        "emp_id": employee,
-        "class": employee_class,
-        "clearance": clearance
-    }
+    class_mapping = {'1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E'}
+
+
+    if class_digit not in class_mapping:
+        raise ValueError("Incorrect class digit.")
+    elif clearance_digit not in "12345":
+        raise ValueError("Invalid clearance digit")
+    else:
+        clearance = int(clearance_digit)
+        employee_class = class_mapping[class_digit]
+        return {
+            "site": site,
+            "department": department,
+            "emp_id": employee,
+            "class": employee_class,
+            "clearance": clearance
+        }
 
 if __name__ == "__main__":
     test_barcodes = [
