@@ -2,11 +2,11 @@ import sqlite3
 import pandas as pd
 import getpass
 
-from init_db import gen_salt_hash
 from init_db import init_database
 from src.console import pause
 from src.console import clear_screen
 from src.config import DB_PATH
+from src.security import gen_salt_hash
 
 # class mapping to transform from a letter to a digit 
 

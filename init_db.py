@@ -1,20 +1,7 @@
 import os
-import hashlib
 import sqlite3
 
 from src.config import DATA_DIR, DB_PATH
-
-def gen_salt_hash(pin: str) -> str:
-    salt = os.urandom(16).hex()
-
-    hash_obj = hashlib.pbkdf2_hmac('sha256', pin.encode(), salt.encode(), 100000)
-    return f"{salt}${hash_obj.hex()}"
-
-if __name__ == "__main__":
-    test_pin = "1234"
-    hashed_pin = gen_salt_hash(test_pin)
-    print(f"Original PIN: {test_pin}")
-    print(f"Salted and Hashed PIN: {hashed_pin}")
 
 def init_database():
     os.makedirs(DATA_DIR, exist_ok=True)
