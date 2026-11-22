@@ -1,7 +1,7 @@
 import os
 import sqlite3
 
-from src.config import DATA_DIR, DB_PATH
+from src.config import DATA_DIR, DB_PATH, EMPLOYEES_SCHEMA
 
 def init_database():
     os.makedirs(DATA_DIR, exist_ok=True)
@@ -10,21 +10,7 @@ def init_database():
     cursor = conn.cursor()
 
     # CREATE TABLE IF NOT EXISTS doesn't change an existing table, so we add missing columns below.
-    cursor.execute(''' 
-            CREATE TABLE IF NOT EXISTS employees (
-                site TEXT,
-                department TEXT,
-                emp_id TEXT,
-                name TEXT,
-                clearance_level INTEGER,
-                access_class TEXT,
-                pin_hash TEXT,
-                failed_attempts INTEGER NOT NULL DEFAULT 0,
-                window_started_at TEXT,
-                locked_until TEXT,
-                PRIMARY KEY (site, department, emp_id)
-            )
-        ''')
+    cursor.execute(EMPLOYEES_SCHEMA)
     cursor.execute("PRAGMA table_info(employees)")
     columns = [row[1] for row in cursor.fetchall()]
 

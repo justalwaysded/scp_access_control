@@ -1,3 +1,5 @@
+from src.config import DIGIT_TO_CLASS
+
 def parse_barcode(raw_string) -> dict:
     clean_string = raw_string.strip()
 
@@ -10,16 +12,13 @@ def parse_barcode(raw_string) -> dict:
     class_digit = clean_string[9]
     clearance_digit = clean_string[10]
 
-    class_mapping = {'1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E'}
-
-
-    if class_digit not in class_mapping:
+    if class_digit not in DIGIT_TO_CLASS:
         raise ValueError("Incorrect class digit.")
     elif clearance_digit not in "12345":
         raise ValueError("Invalid clearance digit")
     else:
         clearance = int(clearance_digit)
-        employee_class = class_mapping[class_digit]
+        employee_class = DIGIT_TO_CLASS[class_digit]
         return {
             "site": site,
             "department": department,
