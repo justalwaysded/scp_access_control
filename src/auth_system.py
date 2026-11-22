@@ -8,22 +8,10 @@ import sys
 
 from datetime import datetime, timedelta
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.append(parent_dir)
-
 from src.parser import parse_barcode
 from src.console import pause
 from src.console import clear_screen
-
-
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.path.join(BASE_DIR, 'data', 'security.db')
-
-LOG_PATH = os.path.join(BASE_DIR, 'data', 'auth.log')
-
-EVENTS_PATH = os.path.join(BASE_DIR, 'config', 'events.json')
+from src.config import BASE_DIR, DB_PATH, EVENTS_PATH
 
 with open(EVENTS_PATH, "r", encoding="utf-8") as f:
     EVENT_CATALOG = json.load(f)

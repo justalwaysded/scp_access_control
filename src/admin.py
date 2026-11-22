@@ -1,22 +1,12 @@
-import os   
 import sqlite3
-import sys
 import pandas as pd
 import getpass
-
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.append(parent_dir)
 
 from init_db import gen_salt_hash
 from init_db import init_database
 from src.console import pause
 from src.console import clear_screen
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR = os.path.join(BASE_DIR, 'data')
-DB_PATH = os.path.join(DATA_DIR, 'security.db')
-LOG_PATH = os.path.join(DATA_DIR, 'auth.log')
+from src.config import DB_PATH
 
 # class mapping to transform from a letter to a digit 
 
