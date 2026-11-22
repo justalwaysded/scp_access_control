@@ -2,8 +2,7 @@ import pytest
 
 from src.admin import build_barcode
 from src.parser import parse_barcode
-from init_db import gen_salt_hash
-from src.auth_system import verify_pin
+from src.security import gen_salt_hash, verify_pin
 
 test_site = "15"
 test_department = "42"

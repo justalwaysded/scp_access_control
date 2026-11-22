@@ -1,5 +1,3 @@
-import hashlib
-import hmac
 import sqlite3
 import os
 import getpass
@@ -8,22 +6,11 @@ import sys
 
 from datetime import datetime, timedelta
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.append(parent_dir)
-
 from src.parser import parse_barcode
 from src.console import pause
 from src.console import clear_screen
-
-
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.path.join(BASE_DIR, 'data', 'security.db')
-
-LOG_PATH = os.path.join(BASE_DIR, 'data', 'auth.log')
-
-EVENTS_PATH = os.path.join(BASE_DIR, 'config', 'events.json')
+from src.config import BASE_DIR, DB_PATH, EVENTS_PATH
+from src.security import verify_pin
 
 with open(EVENTS_PATH, "r", encoding="utf-8") as f:
     EVENT_CATALOG = json.load(f)
@@ -54,22 +41,6 @@ def log_event(event_id: str, card_id: str, details: str = "", emp_id: str | None
     
     if event_id != "LOGIN_GRANTED":
         print(event_data["message"])
-
-def verify_pin(stored_password: str, provided_pin: str) -> bool:
-    try:
-        salt, stored_hash = stored_password.split('$')
-    except ValueError:
-        return False
-
-    new_hash = hashlib.pbkdf2_hmac(
-        'sha256',
-        provided_pin.encode('utf-8'),
-        salt.encode('utf-8'),
-        100_000
-    ).hex()
-
-    # Compare hashes using a function designed to be resistant to timing analysis.
-    return hmac.compare_digest(stored_hash, new_hash)
 
 def is_db_initialized(db_path: str) -> bool:
     if not os.path.isfile(db_path):

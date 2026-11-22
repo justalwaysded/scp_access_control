@@ -1,46 +1,16 @@
 import os
-import hashlib
 import sqlite3
 
-
-
-def gen_salt_hash(pin: str) -> str:
-    salt = os.urandom(16).hex()
-
-    hash_obj = hashlib.pbkdf2_hmac('sha256', pin.encode(), salt.encode(), 100000)
-    return f"{salt}${hash_obj.hex()}"
-
-if __name__ == "__main__":
-    test_pin = "1234"
-    hashed_pin = gen_salt_hash(test_pin)
-    print(f"Original PIN: {test_pin}")
-    print(f"Salted and Hashed PIN: {hashed_pin}")
+from src.config import DATA_DIR, DB_PATH, EMPLOYEES_SCHEMA
 
 def init_database():
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    DATA_DIR = os.path.join(BASE_DIR, 'data')
     os.makedirs(DATA_DIR, exist_ok=True)
-    DB_PATH = os.path.join(DATA_DIR, 'security.db')
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     # CREATE TABLE IF NOT EXISTS doesn't change an existing table, so we add missing columns below.
-    cursor.execute(''' 
-            CREATE TABLE IF NOT EXISTS employees (
-                site TEXT,
-                department TEXT,
-                emp_id TEXT,
-                name TEXT,
-                clearance_level INTEGER,
-                access_class TEXT,
-                pin_hash TEXT,
-                failed_attempts INTEGER NOT NULL DEFAULT 0,
-                window_started_at TEXT,
-                locked_until TEXT,
-                PRIMARY KEY (site, department, emp_id)
-            )
-        ''')
+    cursor.execute(EMPLOYEES_SCHEMA)
     cursor.execute("PRAGMA table_info(employees)")
     columns = [row[1] for row in cursor.fetchall()]
 

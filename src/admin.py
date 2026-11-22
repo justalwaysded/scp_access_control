@@ -1,28 +1,17 @@
-import os   
 import sqlite3
-import sys
 import pandas as pd
 import getpass
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.append(parent_dir)
-
-from init_db import gen_salt_hash
 from init_db import init_database
 from src.console import pause
 from src.console import clear_screen
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR = os.path.join(BASE_DIR, 'data')
-DB_PATH = os.path.join(DATA_DIR, 'security.db')
-LOG_PATH = os.path.join(DATA_DIR, 'auth.log')
+from src.config import DB_PATH, CLASS_TO_DIGIT
+from src.security import gen_salt_hash
 
 # class mapping to transform from a letter to a digit 
 
 def build_barcode(site, department, emp_id, access_class, clearance) -> str:
-    reversed_class_mapping = {'A': '1', 'B': '2', 'C': '3', 'D': '4', 'E': '5'}
-    employee_class = reversed_class_mapping.get(access_class, '5')
+    employee_class = CLASS_TO_DIGIT[access_class]
     ready_barcode = f"{site}{department}{emp_id}{employee_class}{clearance}"
     return ready_barcode
 
@@ -67,7 +56,7 @@ def register_employee():
     while True:
         access_class = input("Access class (A-E): ").strip().upper()
         
-        if access_class.isalpha() and len(access_class) == 1 and 'A' <= access_class <= 'E':
+        if access_class in CLASS_TO_DIGIT:
             break
         print("[ERROR] Access class must contain a single letter from A to E.")
 
