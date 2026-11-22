@@ -71,6 +71,22 @@ def verify_pin(stored_password: str, provided_pin: str) -> bool:
     # Compare hashes using a function designed to be resistant to timing analysis.
     return hmac.compare_digest(stored_hash, new_hash)
 
+def is_db_initialized(db_path: str) -> bool:
+    if not os.path.isfile(db_path):
+        return False
+
+    try:
+        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+        cursor = conn.execute(
+            "SELECT 1 FROM sqlite_master "
+            "WHERE type = 'table' AND name = 'employees'"
+        )
+        exists = cursor.fetchone() is not None
+        conn.close()
+        return exists
+    except sqlite3.Error:
+        return False
+
 def authenticate_user(raw_barcode: str) -> bool:
     clean_code = raw_barcode.strip()
 
@@ -78,6 +94,14 @@ def authenticate_user(raw_barcode: str) -> bool:
         card = parse_barcode(clean_code)
     except ValueError as e:
         log_event("ERR_01", clean_code, details=str(e))
+        pause()
+        return False
+
+    if not is_db_initialized(DB_PATH):
+        log_event(
+            "DB_UNAVAILABLE",
+            clean_code,
+        )
         pause()
         return False
 
@@ -180,6 +204,11 @@ def authenticate_user(raw_barcode: str) -> bool:
     return True
 
 if __name__ == "__main__":
+    if not is_db_initialized(DB_PATH):
+        log_event("DB_UNAVAILABLE", "")
+        pause()
+        sys.exit(1)
+
     while True:
         clear_screen()    
         print("=== SCP FOUNDATION ACCESS CONTROL TERMINAL ===")

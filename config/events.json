@@ -33,5 +33,11 @@
     "event_type": "ACCESS_GRANTED",
     "severity": "INFO",
     "message": "Access granted. Welcome."
+  },
+  "DB_UNAVAILABLE": {
+    "event_type": "DATABASE_ERROR",
+    "code": "DATABASE_IS_UNAVAILABLE",
+    "severity": "CRITICAL",
+    "message": "Database is not initialized or employees table is missing. Run init_db.py"
   }
 }
